@@ -185,11 +185,13 @@
                   "pm.test('Status is 200', function () {",
                   "  pm.response.to.have.status(200);",
                   "});",
-                  "pm.test('Has success code and new access', function () {",
+                  "pm.test('Has success code and rotated tokens', function () {",
                   "  const body = pm.response.json();",
-                  "  pm.expect(body.code).to.eql('S200005');",
+                  "  pm.expect(body.code).to.eql('S200004');",
                   "  pm.expect(body.access).to.be.a('string').and.not.empty;",
+                  "  pm.expect(body.refresh).to.be.a('string').and.not.empty;",
                   "  pm.environment.set('access', body.access);",
+                  "  pm.environment.set('refresh', body.refresh);",
                   "});"
                 ]
               }
@@ -457,7 +459,89 @@
           }
         },
         {
-          "name": "06 - POST /admin/clients",
+          "name": "06 - POST /admin/users/:id/logout (by aud)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns device logout response', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.code).to.eql('S200021');",
+                  "  pm.expect(body.data.aud).to.eql(pm.environment.get('aud'));",
+                  "  pm.expect(body.data.revoked_count).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Basic {{admin_basic}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{user_id}}/logout?aud={{aud}}&lang={{lang}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "{{user_id}}", "logout"],
+              "query": [
+                { "key": "aud", "value": "{{aud}}" },
+                { "key": "lang", "value": "{{lang}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "07 - POST /admin/users/:id/logout-all-devices",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns all-devices logout response', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.code).to.eql('S200022');",
+                  "  pm.expect(body.data.revoked_count).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Basic {{admin_basic}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{user_id}}/logout-all-devices?lang={{lang}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "{{user_id}}", "logout-all-devices"],
+              "query": [
+                { "key": "lang", "value": "{{lang}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "08 - POST /admin/clients",
           "event": [
             {
               "listen": "test",
@@ -500,7 +584,7 @@
           }
         },
         {
-          "name": "07 - GET /admin/clients",
+          "name": "09 - GET /admin/clients",
           "event": [
             {
               "listen": "test",
@@ -536,7 +620,7 @@
           }
         },
         {
-          "name": "08 - GET /admin/codes (error bad basic)",
+          "name": "10 - GET /admin/codes (error bad basic)",
           "event": [
             {
               "listen": "test",

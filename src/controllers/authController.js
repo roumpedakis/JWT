@@ -285,41 +285,82 @@ exports.refreshToken = async (req, res) => {
 
         // Hash-based validation: compare token hash with DB
         const tokenHash = sha256Hash(token);
-        const stored = await Token.findOne({ token_hash: tokenHash, type: 1, revoked: { $ne: true } });
-        
-        if (!stored) return sendError(req, res, 401, 'token_not_found_or_revoked');
-
-        // AUD binding: ensure token is from expected device
-        if (payload.aud !== stored.aud) {
-            return sendError(req, res, 401, 'device_mismatch_token_revoked');
-        }
-
-        // CONCURRENT REUSE DETECTION: 5-second window
         const CONCURRENT_REUSE_WINDOW = 5000;
-        if (stored.used_at) {
-            const timeSinceFirstUse = Date.now() - stored.used_at.getTime();
-            
-            if (timeSinceFirstUse < CONCURRENT_REUSE_WINDOW) {
-                // 🚨 COMPROMISE DETECTED: Same token used 2+ times within 5 seconds
-                // Attacker + legitimate user both have the token
-                // Revoke entire family immediately
-                await Token.updateMany(
-                    { family_id: stored.family_id },
-                    {
-                        reuse_detected: true,
-                        revoked: true,
-                        revoked_at: now(),
-                        revoked_reason: 'concurrent_reuse_detected',
-                        compromised_at: Date.now(),
-                    }
-                );
-                
-                console.warn(`[SECURITY] Refresh token reuse detected for user=${stored.user}, family=${stored.family_id}, aud=${stored.aud}`);
+        const activityAt = new Date();
+        const requestMeta = {
+            ip_address: req.ip || null,
+            user_agent: typeof req.get === 'function' ? req.get('user-agent') : null,
+            last_activity_at: activityAt,
+        };
+
+        // Atomically consume the refresh token. If this succeeds, no parallel request can consume it again.
+        let stored = await Token.findOneAndUpdate(
+            {
+                token_hash: tokenHash,
+                type: 1,
+                revoked: { $ne: true },
+                used_at: null,
+                aud: payload.aud,
+            },
+            {
+                $set: {
+                    used_at: activityAt,
+                    revoked: true,
+                    revoked_at: now(),
+                    revoked_reason: 'rotated',
+                    ...requestMeta,
+                },
+            },
+            { new: false }
+        );
+
+        if (!stored) {
+            const existing = await Token.findOne({ token_hash: tokenHash, type: 1 });
+
+            if (!existing) return sendError(req, res, 401, 'token_not_found_or_revoked');
+
+            if (payload.aud !== existing.aud) {
+                if (!existing.revoked) {
+                    await Token.updateOne(
+                        { _id: existing._id },
+                        {
+                            revoked: true,
+                            revoked_at: now(),
+                            revoked_reason: 'device_mismatch',
+                            ...requestMeta,
+                        }
+                    );
+                }
+                return sendError(req, res, 401, 'device_mismatch_token_revoked');
+            }
+
+            if (existing.reuse_detected) {
                 return sendError(req, res, 401, 'token_compromised_reuse_detected');
             }
-            
-            // Token already used but not concurrent (normal already-spent scenario)
-            return sendError(req, res, 401, 'token_already_used');
+
+            if (existing.used_at) {
+                const timeSinceFirstUse = Date.now() - existing.used_at.getTime();
+
+                if (timeSinceFirstUse < CONCURRENT_REUSE_WINDOW) {
+                    await Token.updateMany(
+                        { family_id: existing.family_id },
+                        {
+                            reuse_detected: true,
+                            revoked: true,
+                            revoked_at: now(),
+                            revoked_reason: 'concurrent_reuse_detected',
+                            compromised_at: activityAt,
+                        }
+                    );
+
+                    console.warn(`[SECURITY] Refresh token reuse detected for user=${existing.user}, family=${existing.family_id}, aud=${existing.aud}`);
+                    return sendError(req, res, 401, 'token_compromised_reuse_detected');
+                }
+
+                return sendError(req, res, 401, 'token_already_used');
+            }
+
+            return sendError(req, res, 401, 'token_not_found_or_revoked');
         }
 
         const agent = await checkAgent(stored.client_id);
@@ -339,19 +380,7 @@ exports.refreshToken = async (req, res) => {
             return sendError(req, res, 500, 'failed_create_tokens');
         }
 
-        // Mark old refresh as used/revoked
-        await Token.updateOne(
-            { token_hash: tokenHash },
-            {
-                used_at: Date.now(),
-                revoked: true,
-                revoked_at: now(),
-                revoked_reason: 'rotated',
-                last_activity_at: Date.now(),
-                ip_address: req.ip,
-                user_agent: req.get('user-agent'),
-            }
-        );
+        await Token.deleteMany({ user: stored.user, aud: stored.aud, type: 0 });
 
         // Store new access token
         const accessPayload = jwt.decode(accessToken);
@@ -385,8 +414,8 @@ exports.refreshToken = async (req, res) => {
             token_hash: newRefreshHash,       // New hash for next rotation
             family_id: newFamilyId,           // Same family
             parent_jti: payload.jti,          // Link to old refresh  
-            ip_address: req.ip,               // Log IP
-            user_agent: req.get('user-agent'), // Log user-agent
+            ip_address: requestMeta.ip_address,
+            user_agent: requestMeta.user_agent,
         });
 
         // Return both access + refresh (rotation response)
@@ -424,12 +453,7 @@ function createTokenPair(agent, user, aud, scopes, familyId) {
 }
 
 async function lookupUser(username) {
-    const existing = await findUser(username);
-    if (existing) return existing;
-
-    if (process.env.ALLOW_MOCK_USERS !== 'true') return null;
-
-    return ensureUser(username, { mobile: '6900000000' });
+    return findUser(username);
 }
 
 async function findUser(username) {

@@ -12,6 +12,7 @@ jest.mock('../../src/models/Token', () => ({
     find: jest.fn(),
     countDocuments: jest.fn(),
     deleteMany: jest.fn(),
+    updateMany: jest.fn(),
     findByIdAndUpdate: jest.fn(),
     findByIdAndDelete: jest.fn(),
 }));
@@ -128,6 +129,55 @@ describe('adminController', () => {
 
         expect(res.statusCode).toBe(409);
         expect(res.body.errors[0].code).toBe('E409001');
+    });
+
+    test('logoutUserDevice success', async () => {
+        User.findOne.mockResolvedValue({ _id: 'u1', username: 'user01' });
+        Token.updateMany.mockResolvedValue({ modifiedCount: 2 });
+        const req = mockReq({ query: { aud: 'device-1', lang: 'EN' } });
+        req.params = { id: 'u1' };
+        const res = mockRes();
+
+        await adminController.logoutUserDevice(req, res);
+
+        expect(res.statusCode).toBe(200);
+        expect(res.body.code).toBe('S200021');
+        expect(res.body.data.aud).toBe('device-1');
+        expect(res.body.data.revoked_count).toBe(2);
+        expect(Token.updateMany).toHaveBeenCalledWith(
+            expect.objectContaining({ aud: 'device-1' }),
+            expect.objectContaining({ revoked: true, revoked_reason: 'admin_logout_device' })
+        );
+    });
+
+    test('logoutAllUserDevices returns 404 when user missing', async () => {
+        User.findOne.mockResolvedValue(null);
+        const req = mockReq({ query: { lang: 'EN' } });
+        req.params = { id: 'missing-user' };
+        const res = mockRes();
+
+        await adminController.logoutAllUserDevices(req, res);
+
+        expect(res.statusCode).toBe(404);
+        expect(res.body.errors[0].code).toBe('E404001');
+    });
+
+    test('logoutAllUserDevices success', async () => {
+        User.findOne.mockResolvedValue({ _id: 'u1', username: 'user01' });
+        Token.updateMany.mockResolvedValue({ modifiedCount: 4 });
+        const req = mockReq({ query: { lang: 'EN' } });
+        req.params = { id: 'u1' };
+        const res = mockRes();
+
+        await adminController.logoutAllUserDevices(req, res);
+
+        expect(res.statusCode).toBe(200);
+        expect(res.body.code).toBe('S200022');
+        expect(res.body.data.revoked_count).toBe(4);
+        expect(Token.updateMany).toHaveBeenCalledWith(
+            expect.objectContaining({ revoked: { $ne: true } }),
+            expect.objectContaining({ revoked: true, revoked_reason: 'admin_logout_all_devices' })
+        );
     });
 
     test('getClients success', async () => {

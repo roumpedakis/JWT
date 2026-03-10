@@ -18,7 +18,6 @@ function hmac(data, secret) {
 describe('POST /auth/sms', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        process.env.ALLOW_MOCK_USERS = 'true';
     });
 
     test('returns 400 when user/aud missing', async () => {
@@ -46,8 +45,7 @@ describe('POST /auth/sms', () => {
         expect(res.body.errors[0].code).toBe('E403002');
     });
 
-    test('returns 403 when user not found (mock users disabled)', async () => {
-        process.env.ALLOW_MOCK_USERS = 'false';
+    test('returns 403 when user not found', async () => {
         Agent.findOne.mockResolvedValue({ client_secret: 'secret', pin_exp: 300 });
         const hash = hmac('clnt0001:user01:dev1', 'secret');
         const req = mockReq({

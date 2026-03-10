@@ -73,6 +73,8 @@ class Dictionary {
         ok_admin_user_created: { code: 'S200014', el: 'Ο χρήστης δημιουργήθηκε επιτυχώς', en: 'User created successfully' },
         ok_admin_user_updated: { code: 'S200015', el: 'Ο χρήστης ενημερώθηκε επιτυχώς', en: 'User updated successfully' },
         ok_admin_user_deleted: { code: 'S200016', el: 'Ο χρήστης διαγράφηκε επιτυχώς', en: 'User deleted successfully' },
+        ok_admin_user_device_logged_out: { code: 'S200021', el: 'Η συσκευή του χρήστη αποσυνδέθηκε επιτυχώς', en: 'User device logged out successfully' },
+        ok_admin_user_all_devices_logged_out: { code: 'S200022', el: 'Ο χρήστης αποσυνδέθηκε από όλες τις συσκευές', en: 'User logged out from all devices successfully' },
         ok_admin_clients_listed: { code: 'S200017', el: 'Τα clients φορτώθηκαν επιτυχώς', en: 'Clients loaded successfully' },
         ok_admin_client_created: { code: 'S200018', el: 'Το client δημιουργήθηκε επιτυχώς', en: 'Client created successfully' },
         ok_admin_client_updated: { code: 'S200019', el: 'Το client ενημερώθηκε επιτυχώς', en: 'Client updated successfully' },

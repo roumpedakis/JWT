@@ -37,7 +37,6 @@ npm run smoke:auth
 - `MONGO_URI=...`
 - `JWT_SECRET=...`
 - `LOGIN_URL=http://localhost/auth/login`
-- `ALLOW_MOCK_USERS=true`
 - `SEED_CLIENT_ID=clnt0001`
 - `SEED_CLIENT_SECRET=clientsecret0001`
 - `ADMIN_USER=admin`
@@ -114,6 +113,10 @@ Query:
 - `hash = HMAC_SHA256("{client_id}:{user}:{aud}", client_secret)`
 - `lang=EL|EN` (optional)
 
+Προυποθεσεις:
+- Ο χρηστης πρεπει να υπαρχει στη βαση
+- Ο χρηστης πρεπει να εχει καταχωρημενο `mobile`
+
 Body:
 ```json
 {
@@ -165,11 +168,15 @@ Body:
 Success:
 ```json
 {
-  "code": "S200005",
+  "code": "S200004",
   "access": "...",
+  "refresh": "...",
   "message": "..."
 }
 ```
+
+Σημειωση:
+- Το refresh flow κανει rotation. Καθε επιτυχημενο refresh επιστρεφει και νεο `refresh` token.
 
 ## Admin Endpoints (Basic Auth)
 Ολα τα `/admin/*` endpoints απαιτουν:
@@ -189,6 +196,8 @@ Success:
 ### Users
 - `GET /admin/users`
 - `POST /admin/users`
+- `POST /admin/users/:id/logout?aud={device_aud}`
+- `POST /admin/users/:id/logout-all-devices`
 - `PUT /admin/users/:id`
 - `DELETE /admin/users/:id`
 

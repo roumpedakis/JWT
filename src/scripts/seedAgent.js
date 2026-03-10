@@ -2,6 +2,11 @@ require('dotenv').config();
 const connectDB = require('../config/db');
 const Agent = require('../models/Agent');
 
+if (String(process.env.NODE_ENV || '').toLowerCase() === 'production') {
+    console.error('seedAgent is disabled in production environments.');
+    process.exit(1);
+}
+
 async function run() {
     await connectDB();
 

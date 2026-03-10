@@ -1,6 +1,11 @@
 const crypto = require('crypto');
 const http = require('http');
 
+if (String(process.env.NODE_ENV || '').toLowerCase() === 'production') {
+    console.error('smokeAuth is disabled in production environments.');
+    process.exit(1);
+}
+
 const base = process.env.SMOKE_BASE_URL || `http://localhost:${process.env.PORT || 80}`;
 const client_id = process.env.SEED_CLIENT_ID || 'clnt0001';
 const client_secret = process.env.SEED_CLIENT_SECRET || 'clientsecret0001';

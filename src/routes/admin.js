@@ -16,6 +16,8 @@ router.delete('/tokens/:id', ctrl.deleteToken);
 
 router.get('/users', ctrl.getUsers);
 router.post('/users', ctrl.createUser);
+router.post('/users/:id/logout', ctrl.logoutUserDevice);
+router.post('/users/:id/logout-all-devices', ctrl.logoutAllUserDevices);
 router.put('/users/:id', ctrl.updateUser);
 router.delete('/users/:id', ctrl.deleteUser);
 

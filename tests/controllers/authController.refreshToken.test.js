@@ -6,6 +6,7 @@ jest.mock('../../src/models/Agent', () => ({ findOne: jest.fn() }));
 jest.mock('../../src/models/Code', () => ({ findOne: jest.fn(), deleteOne: jest.fn(), create: jest.fn(), deleteMany: jest.fn() }));
 jest.mock('../../src/models/Token', () => ({
     findOne: jest.fn(),
+    findOneAndUpdate: jest.fn(),
     deleteMany: jest.fn(),
     insertMany: jest.fn(),
     create: jest.fn(),
@@ -51,6 +52,7 @@ describe('POST /auth/token/refresh', () => {
 
     test('returns 401 when stored token not found', async () => {
         const token = jwt.sign({ jti: 'r1', user: 'u1', aud: 'd1' }, process.env.JWT_SECRET);
+        Token.findOneAndUpdate.mockResolvedValue(null);
         Token.findOne.mockResolvedValue(null);
 
         const req = mockReq({ body: { token } });
@@ -64,9 +66,7 @@ describe('POST /auth/token/refresh', () => {
 
     test('returns 200 with new tokens on success (rotation)', async () => {
         const token = jwt.sign({ jti: 'r1', user: 'u1', aud: 'd1', family_id: 'fam1' }, process.env.JWT_SECRET);
-        const tokenHash = sha256Hash(token);
-        
-        Token.findOne.mockResolvedValue({
+        Token.findOneAndUpdate.mockResolvedValue({
             _id: 'tid1',
             jti: 'r1',
             type: 1,
@@ -76,12 +76,12 @@ describe('POST /auth/token/refresh', () => {
             client_ref: 'a1',
             scopes: 'invoice/read',
             family_id: 'fam1',
-            token_hash: tokenHash,
+            token_hash: sha256Hash(token),
             used_at: null,
         });
         User.findOne.mockResolvedValue({ _id: 'u1' });
         Agent.findOne.mockResolvedValue({ _id: 'a1', client_id: 'clnt0001', client_secret: 'secret', access_exp: 60, refresh_exp: 120 });
-        Token.updateOne.mockResolvedValue({});
+        Token.deleteMany.mockResolvedValue({});
         Token.create.mockResolvedValue({});
 
         const req = mockReq({ body: { token }, query: { lang: 'EN' } });
@@ -93,17 +93,20 @@ describe('POST /auth/token/refresh', () => {
         expect(res.body.code).toBe('S200004'); // ok_tokens_issued 
         expect(typeof res.body.access).toBe('string');
         expect(typeof res.body.refresh).toBe('string'); // NEW: refresh in rotation response
-        
-        // Verify old token marked as used/revoked
-        expect(Token.updateOne).toHaveBeenCalledWith(
-            { token_hash: tokenHash },
+
+        expect(Token.findOneAndUpdate).toHaveBeenCalledWith(
+            expect.objectContaining({ used_at: null, aud: 'd1' }),
             expect.objectContaining({
-                used_at: expect.any(Number),
-                revoked: true,
-                revoked_reason: 'rotated',
-            })
+                $set: expect.objectContaining({
+                    used_at: expect.any(Date),
+                    revoked: true,
+                    revoked_reason: 'rotated',
+                }),
+            }),
+            { new: false }
         );
-        
+
+        expect(Token.deleteMany).toHaveBeenCalledWith({ user: 'u1', aud: 'd1', type: 0 });
         // Verify new tokens created
         expect(Token.create).toHaveBeenCalledTimes(2); // access + refresh
     });
@@ -112,7 +115,8 @@ describe('POST /auth/token/refresh', () => {
         const token = jwt.sign({ jti: 'r1', user: 'u1', aud: 'd1', family_id: 'fam1' }, process.env.JWT_SECRET);
         const tokenHash = sha256Hash(token);
         const usedAWhileAgo = new Date(Date.now() - 1000); // 1 second ago
-        
+
+        Token.findOneAndUpdate.mockResolvedValue(null);
         Token.findOne.mockResolvedValue({
             _id: 'tid1',
             jti: 'r1',
@@ -148,7 +152,8 @@ describe('POST /auth/token/refresh', () => {
     test('returns 401 when aud does not match', async () => {
         const token = jwt.sign({ jti: 'r1', user: 'u1', aud: 'd1', family_id: 'fam1' }, process.env.JWT_SECRET);
         const tokenHash = sha256Hash(token);
-        
+
+        Token.findOneAndUpdate.mockResolvedValue(null);
         Token.findOne.mockResolvedValue({
             _id: 'tid1',
             jti: 'r1',
@@ -169,5 +174,12 @@ describe('POST /auth/token/refresh', () => {
 
         expect(res.statusCode).toBe(401);
         expect(res.body.errors[0].code).toBe('E401013'); // device_mismatch_token_revoked
+        expect(Token.updateOne).toHaveBeenCalledWith(
+            { _id: 'tid1' },
+            expect.objectContaining({
+                revoked: true,
+                revoked_reason: 'device_mismatch',
+            })
+        );
     });
 });

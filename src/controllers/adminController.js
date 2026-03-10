@@ -110,6 +110,18 @@ function validateClientPayload(req, isCreate) {
     return null;
 }
 
+function getRevokedCount(result) {
+    if (!result) return 0;
+    if (typeof result.modifiedCount === 'number') return result.modifiedCount;
+    if (typeof result.nModified === 'number') return result.nModified;
+    if (typeof result.matchedCount === 'number') return result.matchedCount;
+    return 0;
+}
+
+async function findUserById(id) {
+    return User.findOne({ _id: id });
+}
+
 exports.getCodes = async (req, res) => {
     try {
         const pagination = parsePagination(req);
@@ -363,6 +375,72 @@ exports.deleteUser = async (req, res) => {
         await Token.deleteMany({ $or: [{ user_id: id }, { user: row.username }] });
 
         return sendSuccess(req, res, 'ok_admin_user_deleted', { data: { id } });
+    } catch (error) {
+        return sendError(req, res, 500, 'internal_server_error');
+    }
+};
+
+exports.logoutUserDevice = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const aud = normalizeString(req.query.aud);
+        if (!id) return sendError(req, res, 400, 'missing_id_param');
+        if (!aud) return sendError(req, res, 400, 'missing_aud');
+
+        const user = await findUserById(id);
+        if (!user) return sendError(req, res, 404, 'user_not_found_admin');
+
+        const result = await Token.updateMany(
+            {
+                $or: [{ user_id: id }, { user: user.username }],
+                aud,
+                revoked: { $ne: true },
+            },
+            {
+                revoked: true,
+                revoked_at: now(),
+                revoked_reason: 'admin_logout_device',
+            }
+        );
+
+        return sendSuccess(req, res, 'ok_admin_user_device_logged_out', {
+            data: {
+                user_id: id,
+                aud,
+                revoked_count: getRevokedCount(result),
+            },
+        });
+    } catch (error) {
+        return sendError(req, res, 500, 'internal_server_error');
+    }
+};
+
+exports.logoutAllUserDevices = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id) return sendError(req, res, 400, 'missing_id_param');
+
+        const user = await findUserById(id);
+        if (!user) return sendError(req, res, 404, 'user_not_found_admin');
+
+        const result = await Token.updateMany(
+            {
+                $or: [{ user_id: id }, { user: user.username }],
+                revoked: { $ne: true },
+            },
+            {
+                revoked: true,
+                revoked_at: now(),
+                revoked_reason: 'admin_logout_all_devices',
+            }
+        );
+
+        return sendSuccess(req, res, 'ok_admin_user_all_devices_logged_out', {
+            data: {
+                user_id: id,
+                revoked_count: getRevokedCount(result),
+            },
+        });
     } catch (error) {
         return sendError(req, res, 500, 'internal_server_error');
     }

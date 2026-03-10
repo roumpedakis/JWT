@@ -9,6 +9,8 @@ const tokenSchema = new mongoose.Schema({
     aud:        { type: String, required: true },  // device id
     user:       { type: String, required: true },
     scopes:     { type: String, required: true },  // π.χ. "invoice/all signature/write"
+    revoked:    { type: Boolean, default: false },
+    revoked_at: { type: Number, default: null },
 });
 
 tokenSchema.index({ user: 1, aud: 1, type: 1 });

@@ -42,7 +42,7 @@ module.exports = (requiredScope) => async (req, res, next) => {
     }
 
     // 3. Έλεγχος ύπαρξης στη DB
-    const stored = await Token.findOne({ jti: payload.jti, type: 0 });
+    const stored = await Token.findOne({ jti: payload.jti, type: 0, revoked: { $ne: true } });
     if (!stored) return err('token_not_found_or_revoked');
 
     // 4. Attach στο request

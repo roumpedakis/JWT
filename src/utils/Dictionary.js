@@ -9,10 +9,13 @@ class Dictionary {
         missing_refresh_token: { code: 'E400007', el: 'Λείπει το refresh token', en: 'Missing refresh token' },
         invalid_grant_expected_code_or_sms: { code: 'E400008', el: 'Μη έγκυρο grant, αναμένεται code ή SMS', en: 'Invalid grant, expected code or SMS' },
         no_mobile_number_set: { code: 'E400009', el: 'Δεν έχει οριστεί αριθμός κινητού', en: 'No mobile number set' },
+        missing_id_param: { code: 'E400010', el: 'Λείπει το id parameter', en: 'Missing id parameter' },
 
         invalid_client_id: { code: 'E403001', el: 'Μη έγκυρο client_id', en: 'Invalid client_id' },
         invalid_hash: { code: 'E403002', el: 'Μη έγκυρο hash', en: 'Invalid hash' },
         user_not_found: { code: 'E403003', el: 'Ο χρήστης δεν βρέθηκε', en: 'User not found' },
+        admin_auth_required: { code: 'E403004', el: 'Απαιτείται Basic authentication', en: 'Basic authentication required' },
+        admin_auth_invalid: { code: 'E403005', el: 'Μη έγκυρα admin credentials', en: 'Invalid admin credentials' },
 
         invalid_code_or_pin: { code: 'E401001', el: 'Μη έγκυρο code/pin', en: 'Invalid code/pin' },
         code_expired: { code: 'E401002', el: 'Το code έληξε', en: 'Code expired' },
@@ -37,7 +40,14 @@ class Dictionary {
         ok_code_assigned: { code: 'S200002', el: 'Το code συνδέθηκε με χρήστη', en: 'Code assigned to user' },
         ok_sms_sent: { code: 'S200003', el: 'Το SMS στάλθηκε επιτυχώς', en: 'SMS sent successfully' },
         ok_tokens_issued: { code: 'S200004', el: 'Τα tokens εκδόθηκαν επιτυχώς', en: 'Tokens issued successfully' },
-        ok_access_refreshed: { code: 'S200005', el: 'Το access token ανανεώθηκε', en: 'Access token refreshed' }
+        ok_access_refreshed: { code: 'S200005', el: 'Το access token ανανεώθηκε', en: 'Access token refreshed' },
+        ok_admin_codes_listed: { code: 'S200006', el: 'Τα codes φορτώθηκαν επιτυχώς', en: 'Codes loaded successfully' },
+        ok_admin_code_updated: { code: 'S200007', el: 'Το code ενημερώθηκε επιτυχώς', en: 'Code updated successfully' },
+        ok_admin_code_deleted: { code: 'S200008', el: 'Το code διαγράφηκε επιτυχώς', en: 'Code deleted successfully' },
+        ok_admin_tokens_listed: { code: 'S200009', el: 'Τα tokens φορτώθηκαν επιτυχώς', en: 'Tokens loaded successfully' },
+        ok_admin_token_updated: { code: 'S200010', el: 'Το token ενημερώθηκε επιτυχώς', en: 'Token updated successfully' },
+        ok_admin_token_revoked: { code: 'S200011', el: 'Το token ανακλήθηκε επιτυχώς', en: 'Token revoked successfully' },
+        ok_admin_token_deleted: { code: 'S200012', el: 'Το token διαγράφηκε επιτυχώς', en: 'Token deleted successfully' }
     };
 
     static normalizeLang(lang) {

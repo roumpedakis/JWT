@@ -258,7 +258,7 @@ exports.refreshToken = async (req, res) => {
             return sendError(req, res, 401, e.name === 'TokenExpiredError' ? 'token_expired' : 'invalid_token');
         }
 
-        const stored = await Token.findOne({ jti: payload.jti, type: 1 });
+        const stored = await Token.findOne({ jti: payload.jti, type: 1, revoked: { $ne: true } });
         if (!stored) return sendError(req, res, 401, 'token_not_found');
 
         const agent = await checkAgent(stored.client_id);

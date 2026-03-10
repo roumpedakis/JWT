@@ -252,6 +252,43 @@ GET /admin/tokens?page=2&limit=25&sort_by=iat&order=desc
   - `code_exp`, `pin_exp`, `access_exp`, `refresh_exp`: θετικοι ακεραιοι
 
 ## Tests
+## Refresh Token Rotation & Security
+
+### Single-Use Rotation
+Καθε refresh token μπορει να χρησιμοποιηθει ΜΟΝΟ μια φορα. Απο τη refresh αιτηση:
+1. Ζητημα νεου refresh token (rotated)
+2. Παλιο refresh ανακαλειται (revoked=true)
+3. Επιστροφη νεου access + νεου refresh
+
+```json
+POST /auth/token/refresh
+Response: {
+  "code": "S200004",
+  "access": "{new_access_token}",
+  "refresh": "{new_refresh_token}"
+}
+```
+
+### Family-Based Reuse Detection
+Ολα τα refresh tokens απο αυτη τη login εχουν ιδιο `family_id`. Αν ενας refresh χρησιμοποιηθει 2+ φορες εντος 5 δευτερολεπτων:
+- **Ολη η οικογενεια ανακαλειται** (concurrent reuse = compromise)
+- Return 401 E401012 token_compromised_reuse_detected
+
+### AUD Binding (Device-Specific)
+Καθε token συνδεεται με συσκευη (aud). Αν refresh απο διαφορετικη συσκευη:
+- Return 401 E401013 device_mismatch_token_revoked
+- Προστατευει απο lateral movement
+
+### Hash-Based Storage
+Refresh tokens: SHA-256(token) στη DB, όχι raw
+Access tokens: metadata only (jti, exp, user, aud, scopes)
+
+###  Error Codes (Refresh)
+- E401010: Token not found or revoked
+- E401012: Concurrent reuse detected (family revoked)
+- E401013: Device mismatch (AUD binding failed)
+- E401014: Token already used previously
+
 ```bash
 npm test
 ```

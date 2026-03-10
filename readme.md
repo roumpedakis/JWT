@@ -50,10 +50,6 @@ npm start
 }
 ```
 
-Rules:
-- `code` παντα πρωτο πεδιο
-- `message` παντα τελευταιο πεδιο
-
 ### Error
 ```json
 {

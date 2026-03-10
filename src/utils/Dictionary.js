@@ -1,0 +1,66 @@
+class Dictionary {
+    static entries = {
+        missing_client_id_header: { code: 'E400001', el: 'Λείπει το client_id header', en: 'Missing client_id header' },
+        missing_aud: { code: 'E400002', el: 'Λείπει το aud', en: 'Missing aud' },
+        missing_hash: { code: 'E400003', el: 'Λείπει το hash', en: 'Missing hash' },
+        missing_code_or_user: { code: 'E400004', el: 'Λείπει το code ή το user', en: 'Missing code or user' },
+        missing_user_or_aud: { code: 'E400005', el: 'Λείπει το user ή το aud', en: 'Missing user or aud' },
+        missing_code_or_pin: { code: 'E400006', el: 'Λείπει το code ή το pin', en: 'Missing code or pin' },
+        missing_refresh_token: { code: 'E400007', el: 'Λείπει το refresh token', en: 'Missing refresh token' },
+        invalid_grant_expected_code_or_sms: { code: 'E400008', el: 'Μη έγκυρο grant, αναμένεται code ή SMS', en: 'Invalid grant, expected code or SMS' },
+        no_mobile_number_set: { code: 'E400009', el: 'Δεν έχει οριστεί αριθμός κινητού', en: 'No mobile number set' },
+
+        invalid_client_id: { code: 'E403001', el: 'Μη έγκυρο client_id', en: 'Invalid client_id' },
+        invalid_hash: { code: 'E403002', el: 'Μη έγκυρο hash', en: 'Invalid hash' },
+        user_not_found: { code: 'E403003', el: 'Ο χρήστης δεν βρέθηκε', en: 'User not found' },
+
+        invalid_code_or_pin: { code: 'E401001', el: 'Μη έγκυρο code/pin', en: 'Invalid code/pin' },
+        code_expired: { code: 'E401002', el: 'Το code έληξε', en: 'Code expired' },
+        code_not_linked_to_user: { code: 'E401003', el: 'Το code δεν έχει συνδεθεί με χρήστη ακόμα', en: 'Code is not linked to a user yet' },
+        invalid_token: { code: 'E401004', el: 'Μη έγκυρο token', en: 'Invalid token' },
+        token_expired: { code: 'E401005', el: 'Το token έληξε', en: 'Token expired' },
+        token_not_found: { code: 'E401006', el: 'Το token δεν βρέθηκε', en: 'Token not found' },
+        agent_not_found: { code: 'E401007', el: 'Ο agent δεν βρέθηκε', en: 'Agent not found' },
+        missing_access_token: { code: 'E401008', el: 'Λείπει το access token', en: 'Missing access token' },
+        insufficient_scope: { code: 'E401009', el: 'Μη επαρκές scope', en: 'Insufficient scope' },
+        token_not_found_or_revoked: { code: 'E401010', el: 'Το token δεν βρέθηκε ή έχει ανακληθεί', en: 'Token not found or revoked' },
+        code_not_found: { code: 'E401011', el: 'Το code δεν βρέθηκε', en: 'Code not found' },
+
+        failed_generate_unique_code: { code: 'E500001', el: 'Αποτυχία δημιουργίας μοναδικού code', en: 'Failed to generate unique code' },
+        failed_generate_unique_pin: { code: 'E500002', el: 'Αποτυχία δημιουργίας μοναδικού PIN', en: 'Failed to generate unique PIN' },
+        failed_send_sms: { code: 'E500003', el: 'Αποτυχία αποστολής SMS', en: 'Failed to send SMS' },
+        failed_create_tokens: { code: 'E500004', el: 'Αποτυχία δημιουργίας tokens', en: 'Failed to create tokens' },
+        failed_create_access_token: { code: 'E500005', el: 'Αποτυχία δημιουργίας access token', en: 'Failed to create access token' },
+        internal_server_error: { code: 'E500999', el: 'Εσωτερικό σφάλμα διακομιστή', en: 'Internal server error' },
+
+        ok_code_generated: { code: 'S200001', el: 'Το code δημιουργήθηκε επιτυχώς', en: 'Code generated successfully' },
+        ok_code_assigned: { code: 'S200002', el: 'Το code συνδέθηκε με χρήστη', en: 'Code assigned to user' },
+        ok_sms_sent: { code: 'S200003', el: 'Το SMS στάλθηκε επιτυχώς', en: 'SMS sent successfully' },
+        ok_tokens_issued: { code: 'S200004', el: 'Τα tokens εκδόθηκαν επιτυχώς', en: 'Tokens issued successfully' },
+        ok_access_refreshed: { code: 'S200005', el: 'Το access token ανανεώθηκε', en: 'Access token refreshed' }
+    };
+
+    static normalizeLang(lang) {
+        const value = String(lang || '').trim().toLowerCase();
+        if (value.startsWith('en')) return 'en';
+        return 'el';
+    }
+
+    static fromRequest(req) {
+        const lang =
+            (req.query && req.query.lang) ||
+            (req.body && req.body.lang) ||
+            req.headers['lang'] ||
+            req.headers['accept-language'];
+        return this.normalizeLang(lang);
+    }
+
+    static get(key, lang = 'el') {
+        const currentLang = this.normalizeLang(lang);
+        const entry = this.entries[key];
+        if (!entry) return { code: 'E500000', message: key };
+        return { code: entry.code, message: currentLang === 'en' ? entry.en : entry.el };
+    }
+}
+
+module.exports = Dictionary;

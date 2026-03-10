@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
+const Dictionary = require('./utils/Dictionary');
 
 const app = express();
 
@@ -19,7 +20,9 @@ app.post('/api/example', authMiddleware('invoice/read'), (req, res) => {
 // ─── Error handler ────────────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
     console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
+    const lang = Dictionary.fromRequest(req);
+    const payload = Dictionary.get('internal_server_error', lang);
+    res.status(500).json({ code: payload.code, error: payload.message });
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────

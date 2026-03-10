@@ -26,7 +26,7 @@ describe('GET /auth/code', () => {
         await controller.getCode(req, res);
 
         expect(res.statusCode).toBe(400);
-        expect(res.body.error.code).toBe('E400001');
+        expect(res.body.errors[0].code).toBe('E400001');
     });
 
     test('returns 403 when hash invalid', async () => {
@@ -37,7 +37,7 @@ describe('GET /auth/code', () => {
         await controller.getCode(req, res);
 
         expect(res.statusCode).toBe(403);
-        expect(res.body.error.code).toBe('E403002');
+        expect(res.body.errors[0].code).toBe('E403002');
     });
 
     test('returns 500 when unique code generation fails after retries', async () => {
@@ -51,7 +51,7 @@ describe('GET /auth/code', () => {
         await controller.getCode(req, res);
 
         expect(res.statusCode).toBe(500);
-        expect(res.body.error.code).toBe('E500001');
+        expect(res.body.errors[0].code).toBe('E500001');
         expect(Code.findOne).toHaveBeenCalledTimes(10);
     });
 

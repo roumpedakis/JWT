@@ -23,10 +23,12 @@ app.use((err, req, res, next) => {
     const lang = Dictionary.fromRequest(req);
     const payload = Dictionary.get('internal_server_error', lang);
     res.status(500).json({
-        error: {
-            code: payload.code,
-            message: payload.message,
-        },
+        errors: [
+            {
+                code: payload.code,
+                message: payload.message,
+            },
+        ],
     });
 });
 

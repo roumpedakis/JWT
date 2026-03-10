@@ -26,7 +26,7 @@ describe('POST /auth/sms', () => {
         await controller.sendSms(req, res);
 
         expect(res.statusCode).toBe(400);
-        expect(res.body.error.code).toBe('E400005');
+        expect(res.body.errors[0].code).toBe('E400005');
     });
 
     test('returns 403 when hash invalid', async () => {
@@ -41,7 +41,7 @@ describe('POST /auth/sms', () => {
         await controller.sendSms(req, res);
 
         expect(res.statusCode).toBe(403);
-        expect(res.body.error.code).toBe('E403002');
+        expect(res.body.errors[0].code).toBe('E403002');
     });
 
     test('returns 403 when user not found (mock users disabled)', async () => {
@@ -58,7 +58,7 @@ describe('POST /auth/sms', () => {
         await controller.sendSms(req, res);
 
         expect(res.statusCode).toBe(403);
-        expect(res.body.error.code).toBe('E403003');
+        expect(res.body.errors[0].code).toBe('E403003');
     });
 
     test('returns 200 on success', async () => {

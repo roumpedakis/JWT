@@ -28,17 +28,20 @@ function sendError(req, res, status, key, extra = {}) {
     const lang = Dictionary.fromRequest(req);
     const payload = Dictionary.get(key, lang);
     return res.status(status).json({
-        error: {
-            code: payload.code,
-            message: payload.message,
-        },
+        errors: [
+            {
+                code: payload.code,
+                message: payload.message,
+            },
+        ],
         ...extra,
     });
 }
 
 function sendSuccess(req, res, key, extra = {}) {
     const payload = Dictionary.get(key, Dictionary.fromRequest(req));
-    return res.status(200).json({ code: payload.code, ...extra });
+    const { code: _ignoreCode, message: _ignoreMessage, ...safeExtra } = extra;
+    return res.status(200).json({ code: payload.code, ...safeExtra, message: payload.message });
 }
 
 // Create unique code/pin with up to 10 retries

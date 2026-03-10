@@ -28,7 +28,7 @@ describe('POST /auth/token', () => {
         await controller.issueTokens(req, res);
 
         expect(res.statusCode).toBe(400);
-        expect(res.body.error.code).toBe('E400008');
+        expect(res.body.errors[0].code).toBe('E400008');
     });
 
     test('returns 401 when code not linked to user', async () => {
@@ -46,7 +46,7 @@ describe('POST /auth/token', () => {
         await controller.issueTokens(req, res);
 
         expect(res.statusCode).toBe(401);
-        expect(res.body.error.code).toBe('E401003');
+        expect(res.body.errors[0].code).toBe('E401003');
     });
 
     test('returns 200 and tokens on success', async () => {

@@ -9,10 +9,12 @@ module.exports = (requiredScope) => async (req, res, next) => {
     const err = (key) => {
         const payload = Dictionary.get(key, lang);
         return res.status(401).json({
-            error: {
-                code: payload.code,
-                message: payload.message,
-            },
+            errors: [
+                {
+                    code: payload.code,
+                    message: payload.message,
+                },
+            ],
         });
     };
 

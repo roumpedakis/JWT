@@ -1,0 +1,20 @@
+{
+  "name": "jwt",
+  "version": "1.0.0",
+  "description": "Tables \r Table Agents\r     • id (N:15 primary AI)\r     • name (C:20)\r     • client_id (C:8)\r     • client_secret (C:16)\r     • code_exp (N:10)\r     • pin_exp (N:10)\r     • access_exp (N:10)\r     • refresh_exp (N:10)\r Table Codes\r     • client_id (C:8 primary)\r     • code (C:32 HEX primary) \r     • pin (N:6 primary)\r     • user (C:50)\r     • aud (C:20)→device id\r     • exp (N:10)\r Table Tokens\r     • jti (C:43 primary) → hash_hmac('sha256',{client_id}{users}{aud}{scopes},{client_secret})\r     • type (N:1 primary) → 0-access 1-refresh\r     • iat (N:10 primary)\r     • exp (N:10)\r     • client_id : (C:8)\r     • aud (C:50)→device id\r     • user (C:50)\r     • scopes (C:100) → πχ invoice/all signature/write peppol/read\r GET /auth/code\r headers:\r     1. client_id: \"{hex-8}\"\r args:\r     1. aud={device id}\r     2. hash=hash_hmac('sha256',\"{client_id}:{aud}\",{client_secret})\r     3. lang={GR|EN}\r processes:\r     1. If user-agent's client_id check fail  return error 403\r     2. If not hash equals return error 403\r     3. Generate code = bin2hex(random_bytes(16))\r         1. If exists and is not expired (retry 10 more times)\r             1. If fails 10 times return error 500\r         2. If exists and is expired then Over Write\r         3. If not exists insert\r     4. Return success 200 body: JSON {code:{code},url:{grand / login url}}",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "crypto": "^1.0.1",
+    "dotenv": "^17.3.1",
+    "express": "^4.22.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^7.8.9"
+  }
+}

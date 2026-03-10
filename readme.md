@@ -27,6 +27,10 @@ npm run seed:agent
 ```bash
 npm start
 ```
+5. Προαιρετικος γρηγορος ελεγχος end-to-end:
+```bash
+npm run smoke:auth
+```
 
 ## Environment Variables
 - `PORT=80`
@@ -38,6 +42,9 @@ npm start
 - `SEED_CLIENT_SECRET=clientsecret0001`
 - `ADMIN_USER=admin`
 - `ADMIN_PASS=admin123`
+- `SMOKE_BASE_URL=http://localhost:80`
+- `SMOKE_AUD=device-smoke`
+- `SMOKE_USER=user01`
 
 ## Response Contract
 
@@ -132,6 +139,11 @@ Body:
 }
 ```
 
+Επιπλεον ελεγχοι εγκυροτητας:
+- `hash`: 64-ψηφιο hex
+- `grant=code`: `code` 32-ψηφιο hex
+- `grant=sms`: `pin` ακριβως 6 ψηφια
+
 Success:
 ```json
 {
@@ -213,6 +225,31 @@ Success:
 
 Σημειωση:
 - Revoked tokens (`revoked=true`) δεν γινονται δεκτα απο auth middleware και refresh.
+
+### Pagination και ταξινομηση (στα list endpoints)
+Στα `GET /admin/codes`, `GET /admin/tokens`, `GET /admin/users`, `GET /admin/clients` υποστηριζονται:
+- `page` (default `1`)
+- `limit` (default `20`, max `200`)
+- `sort_by` (ανα endpoint επιτρεπτα πεδια)
+- `order=asc|desc` (default `desc`)
+
+Παραδειγμα:
+```http
+GET /admin/tokens?page=2&limit=25&sort_by=iat&order=desc
+```
+
+Οι απαντησεις list περιεχουν και `meta`:
+- `page`, `limit`, `total`, `pages`, `sort_by`, `order`
+
+### Validation στα admin create/update
+- Users:
+  - `username`: 3-50 χαρακτηρες (`a-z`, `A-Z`, `0-9`, `.`, `_`, `-`)
+  - `mobile`: 10-15 ψηφια (αν δοθει)
+  - `is_active`: boolean (αν δοθει)
+- Clients:
+  - `client_id`: 8 αλφαριθμητικοι χαρακτηρες
+  - `client_secret`: 16 χαρακτηρες
+  - `code_exp`, `pin_exp`, `access_exp`, `refresh_exp`: θετικοι ακεραιοι
 
 ## Tests
 ```bash

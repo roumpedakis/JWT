@@ -2,6 +2,7 @@ const { mockReq, mockRes } = require('../helpers/httpMocks');
 
 jest.mock('../../src/models/Code', () => ({
     find: jest.fn(),
+    countDocuments: jest.fn(),
     deleteMany: jest.fn(),
     findByIdAndUpdate: jest.fn(),
     findByIdAndDelete: jest.fn(),
@@ -9,6 +10,7 @@ jest.mock('../../src/models/Code', () => ({
 
 jest.mock('../../src/models/Token', () => ({
     find: jest.fn(),
+    countDocuments: jest.fn(),
     deleteMany: jest.fn(),
     findByIdAndUpdate: jest.fn(),
     findByIdAndDelete: jest.fn(),
@@ -16,6 +18,7 @@ jest.mock('../../src/models/Token', () => ({
 
 jest.mock('../../src/models/User', () => ({
     find: jest.fn(),
+    countDocuments: jest.fn(),
     findOne: jest.fn(),
     create: jest.fn(),
     findByIdAndUpdate: jest.fn(),
@@ -24,6 +27,7 @@ jest.mock('../../src/models/User', () => ({
 
 jest.mock('../../src/models/Agent', () => ({
     find: jest.fn(),
+    countDocuments: jest.fn(),
     findOne: jest.fn(),
     create: jest.fn(),
     findByIdAndUpdate: jest.fn(),
@@ -36,11 +40,24 @@ const User = require('../../src/models/User');
 const Agent = require('../../src/models/Agent');
 const adminController = require('../../src/controllers/adminController');
 
+function listChain(data) {
+    return {
+        sort: jest.fn().mockReturnValue({
+            skip: jest.fn().mockReturnValue({
+                limit: jest.fn().mockReturnValue({
+                    lean: jest.fn().mockResolvedValue(data),
+                }),
+            }),
+        }),
+    };
+}
+
 describe('adminController', () => {
     beforeEach(() => jest.clearAllMocks());
 
     test('getCodes success', async () => {
-        Code.find.mockReturnValue({ sort: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue([{ _id: '1' }]) }) });
+        Code.find.mockReturnValue(listChain([{ _id: '1' }]));
+        Code.countDocuments.mockResolvedValue(1);
         const req = mockReq({ query: { client_id: 'c1', lang: 'EN' } });
         const res = mockRes();
 
@@ -49,6 +66,7 @@ describe('adminController', () => {
         expect(res.statusCode).toBe(200);
         expect(res.body.code).toBe('S200006');
         expect(Array.isArray(res.body.data)).toBe(true);
+        expect(res.body.meta.total).toBe(1);
     });
 
     test('updateCode not found', async () => {
@@ -89,7 +107,8 @@ describe('adminController', () => {
     });
 
     test('getUsers success', async () => {
-        User.find.mockReturnValue({ sort: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue([{ _id: 'u1' }]) }) });
+        User.find.mockReturnValue(listChain([{ _id: 'u1' }]));
+        User.countDocuments.mockResolvedValue(1);
         const req = mockReq({ query: { lang: 'EN' } });
         const res = mockRes();
 
@@ -112,7 +131,8 @@ describe('adminController', () => {
     });
 
     test('getClients success', async () => {
-        Agent.find.mockReturnValue({ sort: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue([{ _id: 'c1' }]) }) });
+        Agent.find.mockReturnValue(listChain([{ _id: 'c1' }]));
+        Agent.countDocuments.mockResolvedValue(1);
         const req = mockReq({ query: {} });
         const res = mockRes();
 

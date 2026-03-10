@@ -24,7 +24,11 @@ describe('POST /auth/token', () => {
     });
 
     test('returns 400 when grant invalid', async () => {
-        const req = mockReq({ headers: { client_id: 'clnt0001' }, query: { hash: 'x' }, body: { grant: 'foo' } });
+        const req = mockReq({
+            headers: { client_id: 'clnt0001' },
+            query: { hash: 'a'.repeat(64) },
+            body: { grant: 'foo' },
+        });
         const res = mockRes();
 
         await controller.issueTokens(req, res);
@@ -34,14 +38,15 @@ describe('POST /auth/token', () => {
     });
 
     test('returns 401 when code not linked to user', async () => {
+        const code = 'a'.repeat(32);
         Agent.findOne.mockResolvedValue({ client_secret: 'secret', scopes: '', access_exp: 10, refresh_exp: 20, client_id: 'clnt0001' });
         Code.findOne.mockResolvedValue({ exp: Math.floor(Date.now() / 1000) + 100, user: null });
-        const hash = hmac('clnt0001:abc', 'secret');
+        const hash = hmac(`clnt0001:${code}`, 'secret');
 
         const req = mockReq({
             headers: { client_id: 'clnt0001' },
             query: { hash },
-            body: { grant: 'code', code: 'abc' },
+            body: { grant: 'code', code },
         });
         const res = mockRes();
 
@@ -52,6 +57,7 @@ describe('POST /auth/token', () => {
     });
 
     test('returns 200 and tokens on success', async () => {
+        const code = 'b'.repeat(32);
         Agent.findOne.mockResolvedValue({
             _id: 'a1',
             client_id: 'clnt0001',
@@ -66,11 +72,11 @@ describe('POST /auth/token', () => {
         Token.deleteMany.mockResolvedValue({});
         Token.insertMany.mockResolvedValue({});
 
-        const hash = hmac('clnt0001:abc', 'secret');
+        const hash = hmac(`clnt0001:${code}`, 'secret');
         const req = mockReq({
             headers: { client_id: 'clnt0001' },
             query: { hash, lang: 'EN' },
-            body: { grant: 'code', code: 'abc' },
+            body: { grant: 'code', code },
         });
         const res = mockRes();
 

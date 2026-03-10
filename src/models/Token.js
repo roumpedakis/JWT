@@ -17,5 +17,8 @@ const tokenSchema = new mongoose.Schema({
 
 tokenSchema.index({ user: 1, aud: 1, type: 1 });
 tokenSchema.index({ jti: 1, type: 1 }, { unique: true });
+tokenSchema.index({ user_id: 1, type: 1, revoked: 1 });
+tokenSchema.index({ client_ref: 1, type: 1, revoked: 1 });
+tokenSchema.index({ client_id: 1, revoked: 1, type: 1 });
 
 module.exports = mongoose.model('Token', tokenSchema);

@@ -1,11 +1,11 @@
 const crypto = require('crypto');
 const http = require('http');
 
-const base = 'http://localhost:3000';
-const client_id = 'clnt0001';
-const client_secret = 'clientsecret0001';
-const aud = 'device-smoke';
-const user = 'user01';
+const base = process.env.SMOKE_BASE_URL || `http://localhost:${process.env.PORT || 80}`;
+const client_id = process.env.SEED_CLIENT_ID || 'clnt0001';
+const client_secret = process.env.SEED_CLIENT_SECRET || 'clientsecret0001';
+const aud = process.env.SMOKE_AUD || 'device-smoke';
+const user = process.env.SMOKE_USER || 'user01';
 
 function hmac(data) {
     return crypto.createHmac('sha256', client_secret).update(data).digest('hex');

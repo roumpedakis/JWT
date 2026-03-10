@@ -174,6 +174,7 @@ exports.issueTokens = async (req, res) => {
         const { grant, code, pin } = req.body;
         if (!client_id) return badRequest(req, res, 'missing_client_id_header');
         if (!hash) return badRequest(req, res, 'missing_hash');
+        if (!/^[a-f0-9]{64}$/i.test(String(hash))) return badRequest(req, res, 'invalid_hash_format');
 
         const normalizedGrant = normalizeGrant(grant);
         if (!['code', 'sms'].includes(normalizedGrant)) {
@@ -182,6 +183,12 @@ exports.issueTokens = async (req, res) => {
 
         const credential = normalizedGrant === 'code' ? code : pin;
         if (!credential) return badRequest(req, res, 'missing_code_or_pin');
+        if (normalizedGrant === 'code' && !/^[a-f0-9]{32}$/i.test(String(credential))) {
+            return badRequest(req, res, 'invalid_code_format');
+        }
+        if (normalizedGrant === 'sms' && !/^\d{6}$/.test(String(credential))) {
+            return badRequest(req, res, 'invalid_pin_format');
+        }
 
         const agent = await checkAgent(client_id);
         if (!agent) return sendError(req, res, 403, 'invalid_client_id');

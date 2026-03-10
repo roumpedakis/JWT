@@ -15,6 +15,9 @@ const hmac = (data, secret) =>
 
 const randomHex = (bytes = 16) => crypto.randomBytes(bytes).toString('hex');
 
+const sha256Hash = (data) =>
+    crypto.createHash('sha256').update(data).digest('hex');
+
 const checkAgent = async (client_id) => Agent.findOne({ client_id });
 
 const getClientId = (req) => req.headers['client_id'] || req.headers['client-id'];
@@ -213,11 +216,12 @@ exports.issueTokens = async (req, res) => {
         const { user, aud } = codeRecord;
         const scopes = agent.scopes || '';
         const userRecord = await ensureUser(user);
+        const familyId = randomHex(16); // Create refresh family ID
 
         let accessToken;
         let refreshToken;
         try {
-            ({ accessToken, refreshToken } = createTokenPair(agent, user, aud, scopes));
+            ({ accessToken, refreshToken } = createTokenPair(agent, user, aud, scopes, familyId));
         } catch (e) {
             return sendError(req, res, 500, 'failed_create_tokens');
         }
@@ -226,6 +230,7 @@ exports.issueTokens = async (req, res) => {
 
         const accessPayload = jwt.decode(accessToken);
         const refreshPayload = jwt.decode(refreshToken);
+        const refreshHash = sha256Hash(refreshToken);
 
         await Token.insertMany([
             {
@@ -251,6 +256,11 @@ exports.issueTokens = async (req, res) => {
                 user,
                 user_id: userRecord ? userRecord._id : null,
                 scopes,
+                token_hash: refreshHash,         // Store refresh token hash
+                family_id: familyId,             // Mark family
+                parent_jti: null,                // First token in family
+                ip_address: req.ip,              // Log IP for audit
+                user_agent: req.get('user-agent'), // Log user-agent
             },
         ]);
 
@@ -273,23 +283,77 @@ exports.refreshToken = async (req, res) => {
             return sendError(req, res, 401, e.name === 'TokenExpiredError' ? 'token_expired' : 'invalid_token');
         }
 
-        const stored = await Token.findOne({ jti: payload.jti, type: 1, revoked: { $ne: true } });
-        if (!stored) return sendError(req, res, 401, 'token_not_found');
+        // Hash-based validation: compare token hash with DB
+        const tokenHash = sha256Hash(token);
+        const stored = await Token.findOne({ token_hash: tokenHash, type: 1, revoked: { $ne: true } });
+        
+        if (!stored) return sendError(req, res, 401, 'token_not_found_or_revoked');
+
+        // AUD binding: ensure token is from expected device
+        if (payload.aud !== stored.aud) {
+            return sendError(req, res, 401, 'device_mismatch_token_revoked');
+        }
+
+        // CONCURRENT REUSE DETECTION: 5-second window
+        const CONCURRENT_REUSE_WINDOW = 5000;
+        if (stored.used_at) {
+            const timeSinceFirstUse = Date.now() - stored.used_at.getTime();
+            
+            if (timeSinceFirstUse < CONCURRENT_REUSE_WINDOW) {
+                // 🚨 COMPROMISE DETECTED: Same token used 2+ times within 5 seconds
+                // Attacker + legitimate user both have the token
+                // Revoke entire family immediately
+                await Token.updateMany(
+                    { family_id: stored.family_id },
+                    {
+                        reuse_detected: true,
+                        revoked: true,
+                        revoked_at: now(),
+                        revoked_reason: 'concurrent_reuse_detected',
+                        compromised_at: Date.now(),
+                    }
+                );
+                
+                console.warn(`[SECURITY] Refresh token reuse detected for user=${stored.user}, family=${stored.family_id}, aud=${stored.aud}`);
+                return sendError(req, res, 401, 'token_compromised_reuse_detected');
+            }
+            
+            // Token already used but not concurrent (normal already-spent scenario)
+            return sendError(req, res, 401, 'token_already_used');
+        }
 
         const agent = await checkAgent(stored.client_id);
         if (!agent) return sendError(req, res, 401, 'agent_not_found');
 
         const userRecord = stored.user_id ? null : await findUser(stored.user);
-
+        
+        const newFamilyId = stored.family_id; // Keep same family for rotation chain
+        
+        // Create new access + refresh token
         let accessToken;
+        let refreshToken;
         try {
-            accessToken = createAccessToken(agent, stored.user, stored.aud, stored.scopes);
+            // createTokenPair now includes family_id in refresh payload
+            ({ accessToken, refreshToken } = createTokenPair(agent, stored.user, stored.aud, stored.scopes, newFamilyId));
         } catch (e) {
-            return sendError(req, res, 500, 'failed_create_access_token');
+            return sendError(req, res, 500, 'failed_create_tokens');
         }
 
-        await Token.deleteMany({ user: stored.user, aud: stored.aud, type: 0 });
+        // Mark old refresh as used/revoked
+        await Token.updateOne(
+            { token_hash: tokenHash },
+            {
+                used_at: Date.now(),
+                revoked: true,
+                revoked_at: now(),
+                revoked_reason: 'rotated',
+                last_activity_at: Date.now(),
+                ip_address: req.ip,
+                user_agent: req.get('user-agent'),
+            }
+        );
 
+        // Store new access token
         const accessPayload = jwt.decode(accessToken);
         await Token.create({
             jti: accessPayload.jti,
@@ -304,7 +368,29 @@ exports.refreshToken = async (req, res) => {
             scopes: stored.scopes,
         });
 
-        return sendSuccess(req, res, 'ok_access_refreshed', { access: accessToken });
+        // Store new refresh token with rotation chain
+        const refreshPayload = jwt.decode(refreshToken);
+        const newRefreshHash = sha256Hash(refreshToken);
+        await Token.create({
+            jti: refreshPayload.jti,
+            type: 1,
+            iat: refreshPayload.iat,
+            exp: refreshPayload.exp,
+            client_id: stored.client_id,
+            client_ref: stored.client_ref || agent._id || null,
+            aud: stored.aud,
+            user: stored.user,
+            user_id: stored.user_id || (userRecord ? userRecord._id : null),
+            scopes: stored.scopes,
+            token_hash: newRefreshHash,       // New hash for next rotation
+            family_id: newFamilyId,           // Same family
+            parent_jti: payload.jti,          // Link to old refresh  
+            ip_address: req.ip,               // Log IP
+            user_agent: req.get('user-agent'), // Log user-agent
+        });
+
+        // Return both access + refresh (rotation response)
+        return sendSuccess(req, res, 'ok_tokens_issued', { access: accessToken, refresh: refreshToken });
     } catch (error) {
         console.error('refreshToken error:', error);
         return sendError(req, res, 500, 'internal_server_error');
@@ -322,13 +408,17 @@ function createAccessToken(agent, user, aud, scopes) {
     return jwt.sign({ jti, iat, exp, aud, scopes, user }, process.env.JWT_SECRET, { algorithm: 'HS256' });
 }
 
-function createTokenPair(agent, user, aud, scopes) {
+function createTokenPair(agent, user, aud, scopes, familyId) {
     const rIat = now();
     const rExp = rIat + agent.refresh_exp;
     const rJti = buildJti(agent.client_id, user, aud, scopes + '_refresh', agent.client_secret);
 
     const accessToken = createAccessToken(agent, user, aud, scopes);
-    const refreshToken = jwt.sign({ jti: rJti, iat: rIat, exp: rExp, aud, scopes, user }, process.env.JWT_SECRET, { algorithm: 'HS256' });
+    const refreshToken = jwt.sign(
+        { jti: rJti, iat: rIat, exp: rExp, aud, scopes, user, family_id: familyId },
+        process.env.JWT_SECRET,
+        { algorithm: 'HS256' }
+    );
 
     return { accessToken, refreshToken };
 }

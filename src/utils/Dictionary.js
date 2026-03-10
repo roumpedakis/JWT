@@ -44,6 +44,9 @@ class Dictionary {
         insufficient_scope: { code: 'E401009', el: 'Μη επαρκές scope', en: 'Insufficient scope' },
         token_not_found_or_revoked: { code: 'E401010', el: 'Το token δεν βρέθηκε ή έχει ανακληθεί', en: 'Token not found or revoked' },
         code_not_found: { code: 'E401011', el: 'Το code δεν βρέθηκε', en: 'Code not found' },
+        token_compromised_reuse_detected: { code: 'E401012', el: 'Ανιχνεύθηκε ταυτόχρονη χρήση refresh token - οικογένεια ανακλήθηκε', en: 'Concurrent refresh token reuse detected - family revoked' },
+        device_mismatch_token_revoked: { code: 'E401013', el: 'Το token χρησιμοποιείται από διαφορετική συσκευή - ανακλήθηκε', en: 'Token used from different device - revoked' },
+        token_already_used: { code: 'E401014', el: 'Το refresh token έχει ήδη χρησιμοποιηθεί', en: 'Refresh token already used' },
         user_not_found_admin: { code: 'E404001', el: 'Ο χρήστης δεν βρέθηκε', en: 'User not found' },
         client_not_found: { code: 'E404002', el: 'Το client δεν βρέθηκε', en: 'Client not found' },
 

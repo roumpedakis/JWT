@@ -1,5 +1,11 @@
 function mockReq({ headers = {}, query = {}, body = {} } = {}) {
-    return { headers, query, body };
+    return {
+        headers,
+        query,
+        body,
+        ip: '127.0.0.1',
+        get: jest.fn((headerName) => headers[headerName] || null),
+    };
 }
 
 function mockRes() {

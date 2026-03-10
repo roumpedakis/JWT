@@ -4,9 +4,11 @@ const { mockReq, mockRes } = require('../helpers/httpMocks');
 jest.mock('../../src/models/Agent', () => ({ findOne: jest.fn() }));
 jest.mock('../../src/models/Code', () => ({ findOne: jest.fn(), deleteOne: jest.fn(), create: jest.fn(), deleteMany: jest.fn() }));
 jest.mock('../../src/models/Token', () => ({ findOne: jest.fn(), deleteMany: jest.fn(), insertMany: jest.fn(), create: jest.fn() }));
+jest.mock('../../src/models/User', () => ({ findOne: jest.fn(), findOneAndUpdate: jest.fn() }));
 
 const Agent = require('../../src/models/Agent');
 const Code = require('../../src/models/Code');
+const User = require('../../src/models/User');
 const controller = require('../../src/controllers/authController');
 
 function hmac(data, secret) {
@@ -63,6 +65,7 @@ describe('POST /auth/sms', () => {
 
     test('returns 200 on success', async () => {
         Agent.findOne.mockResolvedValue({ client_secret: 'secret', pin_exp: 300 });
+        User.findOne.mockResolvedValue({ username: 'user01', mobile: '6900000000' });
         Code.findOne.mockResolvedValue(null);
         Code.deleteMany.mockResolvedValue({});
         Code.create.mockResolvedValue({});

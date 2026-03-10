@@ -14,4 +14,14 @@ router.put('/tokens/:id', ctrl.updateToken);
 router.patch('/tokens/:id/revoke', ctrl.revokeToken);
 router.delete('/tokens/:id', ctrl.deleteToken);
 
+router.get('/users', ctrl.getUsers);
+router.post('/users', ctrl.createUser);
+router.put('/users/:id', ctrl.updateUser);
+router.delete('/users/:id', ctrl.deleteUser);
+
+router.get('/clients', ctrl.getClients);
+router.post('/clients', ctrl.createClient);
+router.put('/clients/:id', ctrl.updateClient);
+router.delete('/clients/:id', ctrl.deleteClient);
+
 module.exports = router;

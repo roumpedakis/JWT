@@ -4,9 +4,11 @@ const { mockReq, mockRes } = require('../helpers/httpMocks');
 jest.mock('../../src/models/Agent', () => ({ findOne: jest.fn() }));
 jest.mock('../../src/models/Code', () => ({ findOne: jest.fn(), deleteOne: jest.fn(), create: jest.fn() }));
 jest.mock('../../src/models/Token', () => ({ findOne: jest.fn(), deleteMany: jest.fn(), insertMany: jest.fn(), create: jest.fn() }));
+jest.mock('../../src/models/User', () => ({ findOne: jest.fn(), findOneAndUpdate: jest.fn() }));
 
 const Agent = require('../../src/models/Agent');
 const Code = require('../../src/models/Code');
+const User = require('../../src/models/User');
 const controller = require('../../src/controllers/authController');
 
 function hmac(data, secret) {
@@ -65,6 +67,7 @@ describe('POST /auth/code/assign', () => {
 
     test('returns 200 on success', async () => {
         Agent.findOne.mockResolvedValue({ client_secret: 'secret' });
+        User.findOneAndUpdate.mockResolvedValue({ _id: 'u1', username: 'user01' });
         const save = jest.fn().mockResolvedValue({});
         Code.findOne.mockResolvedValue({ exp: Math.floor(Date.now() / 1000) + 60, save, user: null });
         const hash = hmac('clnt0001:abc:user01', 'secret');
@@ -82,5 +85,6 @@ describe('POST /auth/code/assign', () => {
         expect(res.body.code).toBe('S200002');
         expect(res.body.success).toBe(true);
         expect(save).toHaveBeenCalled();
+        expect(User.findOneAndUpdate).toHaveBeenCalled();
     });
 });

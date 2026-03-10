@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const Agent = require('../models/Agent');
 const Code = require('../models/Code');
 const Token = require('../models/Token');
+const User = require('../models/User');
 const Dictionary = require('../utils/Dictionary');
 
 // Helpers
@@ -117,6 +118,8 @@ exports.assignCodeUser = async (req, res) => {
         codeRecord.user = user;
         await codeRecord.save();
 
+        await ensureUser(user);
+
         return sendSuccess(req, res, 'ok_code_assigned', { success: true });
     } catch (error) {
         console.error('assignCodeUser error:', error);
@@ -202,6 +205,7 @@ exports.issueTokens = async (req, res) => {
 
         const { user, aud } = codeRecord;
         const scopes = agent.scopes || '';
+        const userRecord = await ensureUser(user);
 
         let accessToken;
         let refreshToken;
@@ -223,8 +227,10 @@ exports.issueTokens = async (req, res) => {
                 iat: accessPayload.iat,
                 exp: accessPayload.exp,
                 client_id,
+                client_ref: agent._id || null,
                 aud,
                 user,
+                user_id: userRecord ? userRecord._id : null,
                 scopes,
             },
             {
@@ -233,8 +239,10 @@ exports.issueTokens = async (req, res) => {
                 iat: refreshPayload.iat,
                 exp: refreshPayload.exp,
                 client_id,
+                client_ref: agent._id || null,
                 aud,
                 user,
+                user_id: userRecord ? userRecord._id : null,
                 scopes,
             },
         ]);
@@ -264,6 +272,8 @@ exports.refreshToken = async (req, res) => {
         const agent = await checkAgent(stored.client_id);
         if (!agent) return sendError(req, res, 401, 'agent_not_found');
 
+        const userRecord = stored.user_id ? null : await findUser(stored.user);
+
         let accessToken;
         try {
             accessToken = createAccessToken(agent, stored.user, stored.aud, stored.scopes);
@@ -280,8 +290,10 @@ exports.refreshToken = async (req, res) => {
             iat: accessPayload.iat,
             exp: accessPayload.exp,
             client_id: stored.client_id,
+            client_ref: stored.client_ref || agent._id || null,
             aud: stored.aud,
             user: stored.user,
+            user_id: stored.user_id || (userRecord ? userRecord._id : null),
             scopes: stored.scopes,
         });
 
@@ -315,11 +327,31 @@ function createTokenPair(agent, user, aud, scopes) {
 }
 
 async function lookupUser(username) {
-    // TODO: Replace with real users DB lookup
-    if (process.env.ALLOW_MOCK_USERS === 'true') {
-        return { username, mobile: '6900000000' };
-    }
-    return null;
+    const existing = await findUser(username);
+    if (existing) return existing;
+
+    if (process.env.ALLOW_MOCK_USERS !== 'true') return null;
+
+    return ensureUser(username, { mobile: '6900000000' });
+}
+
+async function findUser(username) {
+    return User.findOne({ username });
+}
+
+async function ensureUser(username, extra = {}) {
+    if (!username) return null;
+
+    const payload = {
+        username,
+        ...extra,
+    };
+
+    return User.findOneAndUpdate(
+        { username },
+        { $setOnInsert: payload },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 }
 
 async function sendSmsToUser(mobile, pin, lang) {

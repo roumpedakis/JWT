@@ -4,6 +4,7 @@ const { mockReq, mockRes } = require('../helpers/httpMocks');
 jest.mock('../../src/models/Agent', () => ({ findOne: jest.fn() }));
 jest.mock('../../src/models/Code', () => ({ findOne: jest.fn(), deleteOne: jest.fn(), create: jest.fn() }));
 jest.mock('../../src/models/Token', () => ({ findOne: jest.fn(), deleteMany: jest.fn(), insertMany: jest.fn(), create: jest.fn() }));
+jest.mock('../../src/models/User', () => ({ findOne: jest.fn(), findOneAndUpdate: jest.fn() }));
 
 const Agent = require('../../src/models/Agent');
 const Code = require('../../src/models/Code');

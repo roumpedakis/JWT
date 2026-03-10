@@ -10,12 +10,16 @@ class Dictionary {
         invalid_grant_expected_code_or_sms: { code: 'E400008', el: 'Μη έγκυρο grant, αναμένεται code ή SMS', en: 'Invalid grant, expected code or SMS' },
         no_mobile_number_set: { code: 'E400009', el: 'Δεν έχει οριστεί αριθμός κινητού', en: 'No mobile number set' },
         missing_id_param: { code: 'E400010', el: 'Λείπει το id parameter', en: 'Missing id parameter' },
+        missing_username: { code: 'E400011', el: 'Λείπει το username', en: 'Missing username' },
+        missing_client_fields: { code: 'E400012', el: 'Λείπουν υποχρεωτικά πεδία client', en: 'Missing required client fields' },
 
         invalid_client_id: { code: 'E403001', el: 'Μη έγκυρο client_id', en: 'Invalid client_id' },
         invalid_hash: { code: 'E403002', el: 'Μη έγκυρο hash', en: 'Invalid hash' },
         user_not_found: { code: 'E403003', el: 'Ο χρήστης δεν βρέθηκε', en: 'User not found' },
         admin_auth_required: { code: 'E403004', el: 'Απαιτείται Basic authentication', en: 'Basic authentication required' },
         admin_auth_invalid: { code: 'E403005', el: 'Μη έγκυρα admin credentials', en: 'Invalid admin credentials' },
+        user_already_exists: { code: 'E409001', el: 'Ο χρήστης υπάρχει ήδη', en: 'User already exists' },
+        client_already_exists: { code: 'E409002', el: 'Το client υπάρχει ήδη', en: 'Client already exists' },
 
         invalid_code_or_pin: { code: 'E401001', el: 'Μη έγκυρο code/pin', en: 'Invalid code/pin' },
         code_expired: { code: 'E401002', el: 'Το code έληξε', en: 'Code expired' },
@@ -28,6 +32,8 @@ class Dictionary {
         insufficient_scope: { code: 'E401009', el: 'Μη επαρκές scope', en: 'Insufficient scope' },
         token_not_found_or_revoked: { code: 'E401010', el: 'Το token δεν βρέθηκε ή έχει ανακληθεί', en: 'Token not found or revoked' },
         code_not_found: { code: 'E401011', el: 'Το code δεν βρέθηκε', en: 'Code not found' },
+        user_not_found_admin: { code: 'E404001', el: 'Ο χρήστης δεν βρέθηκε', en: 'User not found' },
+        client_not_found: { code: 'E404002', el: 'Το client δεν βρέθηκε', en: 'Client not found' },
 
         failed_generate_unique_code: { code: 'E500001', el: 'Αποτυχία δημιουργίας μοναδικού code', en: 'Failed to generate unique code' },
         failed_generate_unique_pin: { code: 'E500002', el: 'Αποτυχία δημιουργίας μοναδικού PIN', en: 'Failed to generate unique PIN' },
@@ -47,7 +53,15 @@ class Dictionary {
         ok_admin_tokens_listed: { code: 'S200009', el: 'Τα tokens φορτώθηκαν επιτυχώς', en: 'Tokens loaded successfully' },
         ok_admin_token_updated: { code: 'S200010', el: 'Το token ενημερώθηκε επιτυχώς', en: 'Token updated successfully' },
         ok_admin_token_revoked: { code: 'S200011', el: 'Το token ανακλήθηκε επιτυχώς', en: 'Token revoked successfully' },
-        ok_admin_token_deleted: { code: 'S200012', el: 'Το token διαγράφηκε επιτυχώς', en: 'Token deleted successfully' }
+        ok_admin_token_deleted: { code: 'S200012', el: 'Το token διαγράφηκε επιτυχώς', en: 'Token deleted successfully' },
+        ok_admin_users_listed: { code: 'S200013', el: 'Οι χρήστες φορτώθηκαν επιτυχώς', en: 'Users loaded successfully' },
+        ok_admin_user_created: { code: 'S200014', el: 'Ο χρήστης δημιουργήθηκε επιτυχώς', en: 'User created successfully' },
+        ok_admin_user_updated: { code: 'S200015', el: 'Ο χρήστης ενημερώθηκε επιτυχώς', en: 'User updated successfully' },
+        ok_admin_user_deleted: { code: 'S200016', el: 'Ο χρήστης διαγράφηκε επιτυχώς', en: 'User deleted successfully' },
+        ok_admin_clients_listed: { code: 'S200017', el: 'Τα clients φορτώθηκαν επιτυχώς', en: 'Clients loaded successfully' },
+        ok_admin_client_created: { code: 'S200018', el: 'Το client δημιουργήθηκε επιτυχώς', en: 'Client created successfully' },
+        ok_admin_client_updated: { code: 'S200019', el: 'Το client ενημερώθηκε επιτυχώς', en: 'Client updated successfully' },
+        ok_admin_client_deleted: { code: 'S200020', el: 'Το client διαγράφηκε επιτυχώς', en: 'Client deleted successfully' }
     };
 
     static normalizeLang(lang) {

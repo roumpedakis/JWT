@@ -5,10 +5,12 @@ const { mockReq, mockRes } = require('../helpers/httpMocks');
 jest.mock('../../src/models/Agent', () => ({ findOne: jest.fn() }));
 jest.mock('../../src/models/Code', () => ({ findOne: jest.fn(), deleteOne: jest.fn(), create: jest.fn(), deleteMany: jest.fn() }));
 jest.mock('../../src/models/Token', () => ({ findOne: jest.fn(), deleteMany: jest.fn(), insertMany: jest.fn(), create: jest.fn() }));
+jest.mock('../../src/models/User', () => ({ findOne: jest.fn(), findOneAndUpdate: jest.fn() }));
 
 const Agent = require('../../src/models/Agent');
 const Code = require('../../src/models/Code');
 const Token = require('../../src/models/Token');
+const User = require('../../src/models/User');
 const controller = require('../../src/controllers/authController');
 
 function hmac(data, secret) {
@@ -51,12 +53,14 @@ describe('POST /auth/token', () => {
 
     test('returns 200 and tokens on success', async () => {
         Agent.findOne.mockResolvedValue({
+            _id: 'a1',
             client_id: 'clnt0001',
             client_secret: 'secret',
             scopes: 'invoice/read',
             access_exp: 100,
             refresh_exp: 200,
         });
+        User.findOneAndUpdate.mockResolvedValue({ _id: 'u1', username: 'user01' });
         Code.findOne.mockResolvedValue({ exp: Math.floor(Date.now() / 1000) + 100, user: 'user01', aud: 'dev1' });
         Code.deleteOne.mockResolvedValue({});
         Token.deleteMany.mockResolvedValue({});
@@ -80,5 +84,8 @@ describe('POST /auth/token', () => {
         const accessPayload = jwt.decode(res.body.access);
         expect(accessPayload.user).toBe('user01');
         expect(Token.insertMany).toHaveBeenCalled();
+        const insertArg = Token.insertMany.mock.calls[0][0][0];
+        expect(insertArg.user_id).toBe('u1');
+        expect(insertArg.client_ref).toBe('a1');
     });
 });

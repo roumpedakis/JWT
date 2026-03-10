@@ -6,8 +6,10 @@ const tokenSchema = new mongoose.Schema({
     iat:        { type: Number, required: true },  // unix timestamp
     exp:        { type: Number, required: true },  // unix timestamp
     client_id:  { type: String, required: true },
+    client_ref: { type: mongoose.Schema.Types.ObjectId, ref: 'Agent', default: null },
     aud:        { type: String, required: true },  // device id
     user:       { type: String, required: true },
+    user_id:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     scopes:     { type: String, required: true },  // π.χ. "invoice/all signature/write"
     revoked:    { type: Boolean, default: false },
     revoked_at: { type: Number, default: null },

@@ -22,13 +22,18 @@ app.use((err, req, res, next) => {
     console.error(err);
     const lang = Dictionary.fromRequest(req);
     const payload = Dictionary.get('internal_server_error', lang);
-    res.status(500).json({ code: payload.code, error: payload.message });
+    res.status(500).json({
+        error: {
+            code: payload.code,
+            message: payload.message,
+        },
+    });
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 const start = async () => {
     await connectDB();
-    const PORT = process.env.PORT || 3000;
+    const PORT = process.env.PORT || 80;
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 };
 

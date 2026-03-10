@@ -22,7 +22,7 @@ describe('POST /auth/token/refresh', () => {
         await controller.refreshToken(req, res);
 
         expect(res.statusCode).toBe(400);
-        expect(res.body.code).toBe('E400007');
+        expect(res.body.error.code).toBe('E400007');
     });
 
     test('returns 401 when refresh token invalid', async () => {
@@ -32,7 +32,7 @@ describe('POST /auth/token/refresh', () => {
         await controller.refreshToken(req, res);
 
         expect(res.statusCode).toBe(401);
-        expect(res.body.code).toBe('E401004');
+        expect(res.body.error.code).toBe('E401004');
     });
 
     test('returns 401 when stored token not found', async () => {
@@ -45,7 +45,7 @@ describe('POST /auth/token/refresh', () => {
         await controller.refreshToken(req, res);
 
         expect(res.statusCode).toBe(401);
-        expect(res.body.code).toBe('E401006');
+        expect(res.body.error.code).toBe('E401006');
     });
 
     test('returns 200 with new access on success', async () => {

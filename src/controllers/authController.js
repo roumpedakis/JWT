@@ -27,13 +27,18 @@ function badRequest(req, res, key) {
 function sendError(req, res, status, key, extra = {}) {
     const lang = Dictionary.fromRequest(req);
     const payload = Dictionary.get(key, lang);
-    return res.status(status).json({ code: payload.code, error: payload.message, ...extra });
+    return res.status(status).json({
+        error: {
+            code: payload.code,
+            message: payload.message,
+        },
+        ...extra,
+    });
 }
 
 function sendSuccess(req, res, key, extra = {}) {
-    const lang = Dictionary.fromRequest(req);
-    const payload = Dictionary.get(key, lang);
-    return res.status(200).json({ code: payload.code, message: payload.message, ...extra });
+    const payload = Dictionary.get(key, Dictionary.fromRequest(req));
+    return res.status(200).json({ code: payload.code, ...extra });
 }
 
 // Create unique code/pin with up to 10 retries

@@ -20,7 +20,7 @@ describe('authMiddleware', () => {
         await authMiddlewareFactory('invoice/read')(req, res, next);
 
         expect(res.statusCode).toBe(401);
-        expect(res.body.code).toBe('E401008');
+        expect(res.body.error.code).toBe('E401008');
         expect(next).not.toHaveBeenCalled();
     });
 
@@ -32,7 +32,7 @@ describe('authMiddleware', () => {
         await authMiddlewareFactory('invoice/read')(req, res, next);
 
         expect(res.statusCode).toBe(401);
-        expect(res.body.code).toBe('E401004');
+        expect(res.body.error.code).toBe('E401004');
     });
 
     test('returns 401 when scope is insufficient', async () => {
@@ -44,7 +44,7 @@ describe('authMiddleware', () => {
         await authMiddlewareFactory('invoice/read')(req, res, next);
 
         expect(res.statusCode).toBe(401);
-        expect(res.body.code).toBe('E401009');
+        expect(res.body.error.code).toBe('E401009');
         expect(next).not.toHaveBeenCalled();
     });
 
@@ -59,7 +59,7 @@ describe('authMiddleware', () => {
         await authMiddlewareFactory('invoice/read')(req, res, next);
 
         expect(res.statusCode).toBe(401);
-        expect(res.body.code).toBe('E401010');
+        expect(res.body.error.code).toBe('E401010');
         expect(next).not.toHaveBeenCalled();
     });
 

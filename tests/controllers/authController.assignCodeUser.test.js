@@ -23,7 +23,7 @@ describe('POST /auth/code/assign', () => {
         await controller.assignCodeUser(req, res);
 
         expect(res.statusCode).toBe(400);
-        expect(res.body.code).toBe('E400004');
+        expect(res.body.error.code).toBe('E400004');
     });
 
     test('returns 401 when code not found', async () => {
@@ -41,7 +41,7 @@ describe('POST /auth/code/assign', () => {
         await controller.assignCodeUser(req, res);
 
         expect(res.statusCode).toBe(401);
-        expect(res.body.code).toBe('E401011');
+        expect(res.body.error.code).toBe('E401011');
     });
 
     test('returns 401 when code expired', async () => {
@@ -59,7 +59,7 @@ describe('POST /auth/code/assign', () => {
         await controller.assignCodeUser(req, res);
 
         expect(res.statusCode).toBe(401);
-        expect(res.body.code).toBe('E401002');
+        expect(res.body.error.code).toBe('E401002');
         expect(Code.deleteOne).toHaveBeenCalledWith({ client_id: 'clnt0001', code: 'abc' });
     });
 

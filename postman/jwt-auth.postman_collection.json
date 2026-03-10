@@ -1,0 +1,282 @@
+{
+  "info": {
+    "_postman_id": "0b7f55e0-0e4f-4f06-a38c-4ec06c9d4b91",
+    "name": "JWT Auth API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - GET /auth/code (success)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const clientId = pm.environment.get('client_id');",
+              "const aud = pm.environment.get('aud');",
+              "const secret = pm.environment.get('client_secret');",
+              "const payload = `${clientId}:${aud}`;",
+              "const hash = CryptoJS.HmacSHA256(payload, secret).toString(CryptoJS.enc.Hex);",
+              "pm.environment.set('hash', hash);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response has success code', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.code).to.eql('S200001');",
+              "  pm.expect(body.auth_code).to.be.a('string').and.not.empty;",
+              "});",
+              "const body = pm.response.json();",
+              "pm.environment.set('auth_code', body.auth_code);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "client_id", "value": "{{client_id}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/code?aud={{aud}}&hash={{hash}}&lang={{lang}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "code"],
+          "query": [
+            { "key": "aud", "value": "{{aud}}" },
+            { "key": "hash", "value": "{{hash}}" },
+            { "key": "lang", "value": "{{lang}}" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "02 - POST /auth/code/assign (success)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const clientId = pm.environment.get('client_id');",
+              "const code = pm.environment.get('auth_code');",
+              "const user = pm.environment.get('user');",
+              "const secret = pm.environment.get('client_secret');",
+              "const payload = `${clientId}:${code}:${user}`;",
+              "const hash = CryptoJS.HmacSHA256(payload, secret).toString(CryptoJS.enc.Hex);",
+              "pm.environment.set('hash', hash);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response has success code', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.code).to.eql('S200002');",
+              "  pm.expect(body.success).to.eql(true);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "client_id", "value": "{{client_id}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"code\": \"{{auth_code}}\",\n  \"user\": \"{{user}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/code/assign?hash={{hash}}&lang={{lang}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "code", "assign"],
+          "query": [
+            { "key": "hash", "value": "{{hash}}" },
+            { "key": "lang", "value": "{{lang}}" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "03 - POST /auth/token (success)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const clientId = pm.environment.get('client_id');",
+              "const code = pm.environment.get('auth_code');",
+              "const secret = pm.environment.get('client_secret');",
+              "const payload = `${clientId}:${code}`;",
+              "const hash = CryptoJS.HmacSHA256(payload, secret).toString(CryptoJS.enc.Hex);",
+              "pm.environment.set('hash', hash);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response has tokens', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.code).to.eql('S200004');",
+              "  pm.expect(body.access).to.be.a('string').and.not.empty;",
+              "  pm.expect(body.refresh).to.be.a('string').and.not.empty;",
+              "});",
+              "const body = pm.response.json();",
+              "pm.environment.set('access', body.access);",
+              "pm.environment.set('refresh', body.refresh);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "client_id", "value": "{{client_id}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"grant\": \"code\",\n  \"code\": \"{{auth_code}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/token?hash={{hash}}&lang={{lang}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "token"],
+          "query": [
+            { "key": "hash", "value": "{{hash}}" },
+            { "key": "lang", "value": "{{lang}}" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "04 - POST /auth/token/refresh (success)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response has new access', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.code).to.eql('S200005');",
+              "  pm.expect(body.access).to.be.a('string').and.not.empty;",
+              "});",
+              "const body = pm.response.json();",
+              "pm.environment.set('access', body.access);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"{{refresh}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/token/refresh?lang={{lang}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "token", "refresh"],
+          "query": [
+            { "key": "lang", "value": "{{lang}}" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "05 - POST /api/example (protected success)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response contains user', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.user).to.be.a('string');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/example",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "example"]
+        }
+      }
+    },
+    {
+      "name": "06 - POST /auth/token (error invalid hash)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 403', function () { pm.response.to.have.status(403); });",
+              "pm.test('Response has invalid hash code', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.code).to.eql('E403002');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "client_id", "value": "{{client_id}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"grant\": \"code\",\n  \"code\": \"{{auth_code}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/token?hash=invalid-hash&lang={{lang}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "token"],
+          "query": [
+            { "key": "hash", "value": "invalid-hash" },
+            { "key": "lang", "value": "{{lang}}" }
+          ]
+        }
+      }
+    }
+  ]
+}

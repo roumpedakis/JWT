@@ -8,7 +8,12 @@ module.exports = (requiredScope) => async (req, res, next) => {
     const lang = Dictionary.fromRequest(req);
     const err = (key) => {
         const payload = Dictionary.get(key, lang);
-        return res.status(401).json({ code: payload.code, error: payload.message });
+        return res.status(401).json({
+            error: {
+                code: payload.code,
+                message: payload.message,
+            },
+        });
     };
 
     const authHeader = req.headers['authorization'];

@@ -308,11 +308,14 @@
                   "pm.test('Status is 200', function () {",
                   "  pm.response.to.have.status(200);",
                   "});",
-                  "pm.test('Returns success code and optional token_id', function () {",
+                  "pm.test('Returns success code and token linkage', function () {",
                   "  const body = pm.response.json();",
                   "  pm.expect(body.code).to.eql('S200009');",
                   "  if (Array.isArray(body.data) && body.data.length > 0) {",
-                  "    pm.environment.set('token_id', body.data[0]._id);",
+                  "    const t = body.data[0];",
+                  "    pm.environment.set('token_id', t._id);",
+                  "    if (t.user_id) { pm.environment.set('user_id', t.user_id); }",
+                  "    pm.expect(t).to.have.property('client_id');",
                   "  }",
                   "});"
                 ]
@@ -374,7 +377,166 @@
           }
         },
         {
-          "name": "04 - GET /admin/codes (error bad basic)",
+          "name": "04 - POST /admin/users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('User created or exists with proper schema', function () {",
+                  "  const body = pm.response.json();",
+                  "  if (body.code === 'S200014') {",
+                  "    pm.environment.set('user_id', body.data._id);",
+                  "    pm.expect(body.data.username).to.eql(pm.environment.get('user'));",
+                  "  } else {",
+                  "    pm.expect(body.errors).to.be.an('array').and.not.empty;",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Basic {{admin_basic}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{user}}\",\n  \"mobile\": \"6900000000\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/users?lang={{lang}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users"],
+              "query": [
+                { "key": "lang", "value": "{{lang}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "05 - GET /admin/users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns users list', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.code).to.eql('S200013');",
+                  "  pm.expect(body.data).to.be.an('array');",
+                  "  if (body.data.length > 0) { pm.environment.set('user_id', body.data[0]._id); }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Basic {{admin_basic}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users?lang={{lang}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users"],
+              "query": [
+                { "key": "lang", "value": "{{lang}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "06 - POST /admin/clients",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 or 409', function () {",
+                  "  pm.expect([200, 409]).to.include(pm.response.code);",
+                  "});",
+                  "pm.test('Client create response shape', function () {",
+                  "  const body = pm.response.json();",
+                  "  if (body.code === 'S200018') {",
+                  "    pm.environment.set('client_model_id', body.data._id);",
+                  "  } else {",
+                  "    pm.expect(body.errors).to.be.an('array').and.not.empty;",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Basic {{admin_basic}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Client\",\n  \"client_id\": \"clnt0002\",\n  \"client_secret\": \"clientsecret0002\",\n  \"scopes\": \"invoice/read\",\n  \"code_exp\": 300,\n  \"pin_exp\": 300,\n  \"access_exp\": 900,\n  \"refresh_exp\": 604800\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/clients?lang={{lang}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "clients"],
+              "query": [
+                { "key": "lang", "value": "{{lang}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "07 - GET /admin/clients",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Returns clients list', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.code).to.eql('S200017');",
+                  "  pm.expect(body.data).to.be.an('array');",
+                  "  if (body.data.length > 0) { pm.environment.set('client_model_id', body.data[0]._id); }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Basic {{admin_basic}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/clients?lang={{lang}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "clients"],
+              "query": [
+                { "key": "lang", "value": "{{lang}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "08 - GET /admin/codes (error bad basic)",
           "event": [
             {
               "listen": "test",

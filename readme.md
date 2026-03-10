@@ -2,6 +2,10 @@
 
 API αυθεντικοποιησης με JWT (access/refresh), HMAC request validation και admin endpoints.
 
+Πλεον τα tokens συνδεονται και με:
+- `user_id` (reference σε `users` collection)
+- `client_ref` (reference σε `agents/clients` collection)
+
 ## Stack
 - Node.js
 - Express
@@ -174,6 +178,43 @@ Success:
 - `PATCH /admin/tokens/:id/revoke`
 - `DELETE /admin/tokens/:id`
 
+### Users
+- `GET /admin/users`
+- `POST /admin/users`
+- `PUT /admin/users/:id`
+- `DELETE /admin/users/:id`
+
+Ενδεικτικο body για create/update user:
+```json
+{
+  "username": "user01",
+  "mobile": "6900000000",
+  "is_active": true
+}
+```
+
+### Clients
+Στο admin τα `clients` αντιστοιχουν στο μοντελο `Agent`.
+
+- `GET /admin/clients`
+- `POST /admin/clients`
+- `PUT /admin/clients/:id`
+- `DELETE /admin/clients/:id`
+
+Ενδεικτικο body για create/update client:
+```json
+{
+  "name": "Default Agent",
+  "client_id": "clnt0002",
+  "client_secret": "clientsecret0002",
+  "scopes": "invoice/read invoice/write",
+  "code_exp": 300,
+  "pin_exp": 300,
+  "access_exp": 900,
+  "refresh_exp": 604800
+}
+```
+
 Σημειωση:
 - Revoked tokens (`revoked=true`) δεν γινονται δεκτα απο auth middleware και refresh.
 
@@ -192,4 +233,4 @@ npm run test:watch
 - `postman/jwt-auth.postman_collection.json`
 - `postman/jwt-auth.postman_environment.json`
 
-Η collection περιλαμβανει auth flow, error case και admin requests.
+Η collection περιλαμβανει auth flow, error case και admin requests για codes/tokens/users/clients.
